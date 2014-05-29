@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace UpNet.Core
         public String DataSourcePath { get; private set; }
 
         [DataMember]
-        public String LocalPath { get; private set; }
+        public String RelativePath { get; private set; }
 
         [DataMember]
         public String Sha1 { get; private set; }
@@ -31,16 +32,16 @@ namespace UpNet.Core
             Contract.Requires<ArgumentNullException>(localPath != null);
         }
 
-        public Change(FileAction action, String dataSourcePath, String localPath, String sha1)
+        public Change(FileAction action, String dataSourcePath, String relativePath, String sha1)
             : this()
         {
-            Contract.Requires<ArgumentNullException>(localPath != null);
+            Contract.Requires<ArgumentNullException>(relativePath != null);
             Contract.Requires<ArgumentNullException>(action == FileAction.Delete || dataSourcePath != null); // If we're deleting, we don't need the
             Contract.Requires<ArgumentNullException>(action == FileAction.Delete || sha1 != null);           // data source key or hash.
 
             this.Action = action;
             this.DataSourcePath = dataSourcePath;
-            this.LocalPath = localPath;
+            this.RelativePath = relativePath;
             this.Sha1 = sha1;
         }
 
@@ -49,7 +50,20 @@ namespace UpNet.Core
             Contract.Requires<ArgumentNullException>(this.Action == FileAction.Delete || dataSource != null);
             Contract.Requires<ArgumentNullException>(localPath != null);
 
-            throw new NotImplementedException();
+            String fullPath = Path.Combine(localPath, this.RelativePath);
+            switch (this.Action)
+            {
+                case FileAction.AddOrReplace:
+                    using (FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
+                    using (Stream dataStream = await dataSource.GetItemAsync(this.DataSourcePath))
+                    {
+                        await dataStream.CopyToAsync(fs);
+                    }
+                    break;
+                case FileAction.Delete:
+                    await Task.Run(() => File.Delete(fullPath));
+                    break;
+            }
         }
     }
 }

@@ -18,7 +18,7 @@ namespace UpNet.Core.Test
 
             Assert.AreEqual(testFileAction, change.Action);
             Assert.AreEqual(testDataSource, change.DataSourcePath);
-            Assert.AreEqual(testLocalPath, change.LocalPath);
+            Assert.AreEqual(testLocalPath, change.RelativePath);
             Assert.AreEqual(testHash, change.Sha1);
         }
     }
