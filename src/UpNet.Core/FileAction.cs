@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace UpNet.Core
 {
-    public enum FileAction
+    public enum FileAction // Later items are executed first.
     {
         AddOrReplace,
 

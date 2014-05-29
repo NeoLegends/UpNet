@@ -15,8 +15,6 @@ namespace UpNet.Core
     [DataContract]
     public class Update : IEnumerable<Patch>
     {
-        public event ProgressChangedEventHandler FileProgressChanged;
-
         public event ProgressChangedEventHandler PatchProgressChanged;
 
         [IgnoreDataMember]
@@ -66,15 +64,27 @@ namespace UpNet.Core
             Contract.Requires<InvalidOperationException>(this.DataSource != null);
 
             IEnumerable<Patch> patchesToApply = this.Patches.Where(patch => patch.Version > currentVersion).OrderBy(patch => patch.Version);
-            int totalPatchCount = Math.Max(patchesToApply.Count(), 1);
-            int totalFileCount = Math.Max(patchesToApply.Sum(patch => patch.ChangeCount), 1);
+            bool updateSuccess = true;
+
+            int totalPatchCount = Math.Max(patchesToApply.Count(), 1) * 2;
             int currentPatchCount = 0;
-            int currentFileCount = 0;
+
+            try
+            {
+                foreach (Patch patch in patchesToApply)
+                {
+                    await patch.Apply(this.DataSource, localPath);
+                    this.RaisePatchProgessChanged(Interlocked.Increment(ref currentPatchCount) / totalPatchCount, patch.Version);
+                }
+            }
+            catch 
+            {
+                updateSuccess = false;
+            }
 
             foreach (Patch patch in patchesToApply)
             {
-                patch.UpdateProgressChanged += (s, e) => this.RaiseFileProgessChanged(Interlocked.Increment(ref currentFileCount) / totalFileCount, e.UserState);
-                await patch.Apply(this.DataSource, localPath);
+                await patch.FinishApply(this.DataSource, localPath, updateSuccess);
                 this.RaisePatchProgessChanged(Interlocked.Increment(ref currentPatchCount) / totalPatchCount, patch.Version);
             }
         }
@@ -93,15 +103,6 @@ namespace UpNet.Core
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
-        }
-
-        private void RaiseFileProgessChanged(int percentage, object state = null)
-        {
-            ProgressChangedEventHandler handler = this.FileProgressChanged;
-            if (handler != null)
-            {
-                handler(this, new ProgressChangedEventArgs(percentage, state));
-            }
         }
 
         private void RaisePatchProgessChanged(int percentage, object state = null)

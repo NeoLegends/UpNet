@@ -5,6 +5,7 @@ using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using UpNet.Core.DataSource;
@@ -51,18 +52,53 @@ namespace UpNet.Core
             Contract.Requires<ArgumentNullException>(localPath != null);
 
             String fullPath = Path.Combine(localPath, this.RelativePath);
-            switch (this.Action)
+
+            if (this.Action == FileAction.AddOrReplace)
             {
-                case FileAction.AddOrReplace:
-                    using (FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
+                using (FileStream fs = new FileStream(fullPath + ".update", FileMode.Create, FileAccess.Write))
+                {
                     using (Stream dataStream = await dataSource.GetItemAsync(this.DataSourcePath))
                     {
                         await dataStream.CopyToAsync(fs);
                     }
-                    break;
-                case FileAction.Delete:
-                    await Task.Run(() => File.Delete(fullPath));
-                    break;
+
+                    fs.Position = 0;
+                    using (SHA1 shaCalculator = SHA1.Create())
+                    {
+                        byte[] actualHash = await Task.Run(() => shaCalculator.ComputeHash(fs));
+                        if (!actualHash.SequenceEqual(Convert.FromBase64String(this.Sha1)))
+                        {
+                            throw new InvalidOperationException(
+                                String.Format("The hash of the file after the download doesn't match.", this.RelativePath)
+                            );
+                        }
+                    }
+                }
+            }
+            // Deleting will be performed in FinishApply-stage only.
+        }
+
+        public Task FinishApply(IDataSource dataSource, String localPath, bool updateSucceeded)
+        {
+            Contract.Requires<ArgumentNullException>(this.Action == FileAction.Delete || dataSource != null);
+            Contract.Requires<ArgumentNullException>(localPath != null);
+
+            String fullPath = Path.Combine(localPath, this.RelativePath);
+            if (this.Action == FileAction.AddOrReplace)
+            {
+                return updateSucceeded ?
+                    Task.Run(() => File.Replace(fullPath + ".update", fullPath, null)) :
+                    Task.Run(() => File.Delete(fullPath + ".update"));
+            }
+            else if (this.Action == FileAction.Delete)
+            {
+                return updateSucceeded ?
+                    Task.Run(() => File.Delete(fullPath + ".deleted")) :
+                    Task.FromResult(true);
+            }
+            else
+            {
+                return Task.FromResult(true);
             }
         }
     }

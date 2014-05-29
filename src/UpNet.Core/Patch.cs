@@ -15,8 +15,6 @@ namespace UpNet.Core
     [DataContract]
     public class Patch
     {
-        public event ProgressChangedEventHandler UpdateProgressChanged;
-
         [DataMember]
         public IEnumerable<Change> Changes { get; private set; }
 
@@ -51,22 +49,22 @@ namespace UpNet.Core
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
             Contract.Requires<ArgumentNullException>(localPath != null);
+            Contract.Requires<InvalidOperationException>(this.Changes != null);
 
-            int changeCount = Math.Max(this.Changes.Count(), 1);
-            int finishedTasks = 0;
-            return Task.WhenAll(this.Changes.Select(change => change.Apply(dataSource, localPath).ContinueWith(t =>
-            {
-                this.RaiseProgessChanged(Interlocked.Increment(ref finishedTasks) / changeCount, change.RelativePath);
-            })));
+            return Task.WhenAll(this.Changes.OrderByDescending(change => change.Action)
+                                            .Select(change => change.Apply(dataSource, localPath))
+            );
         }
 
-        private void RaiseProgessChanged(int percentage, object state = null)
+        public Task FinishApply(IDataSource dataSource, String localPath, bool updateSucceeded)
         {
-            ProgressChangedEventHandler handler = this.UpdateProgressChanged;
-            if (handler != null)
-            {
-                handler(this, new ProgressChangedEventArgs(percentage, state));
-            }
+            Contract.Requires<ArgumentNullException>(dataSource != null);
+            Contract.Requires<ArgumentNullException>(localPath != null);
+            Contract.Requires<InvalidOperationException>(this.Changes != null);
+
+            return Task.WhenAll(this.Changes.OrderByDescending(change => change.Action)
+                                            .Select(change => change.FinishApply(dataSource, localPath, updateSucceeded))
+            );
         }
     }
 }
