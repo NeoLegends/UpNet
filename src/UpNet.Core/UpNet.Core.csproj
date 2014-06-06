@@ -123,6 +123,7 @@
   <ItemGroup>
     <Compile Include="AddOrReplaceChange.cs" />
     <Compile Include="Change.cs" />
+    <Compile Include="DataSource\FileSystemDataSource.cs" />
     <Compile Include="DataSource\HttpDataSource.cs" />
     <Compile Include="DataSource\IDataSource.cs" />
     <Compile Include="DeleteChange.cs" />
