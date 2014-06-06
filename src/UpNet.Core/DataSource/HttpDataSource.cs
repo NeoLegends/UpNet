@@ -4,17 +4,17 @@ using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace UpNet.Core.DataSource
 {
     public class HttpDataSource : IDataSource
     {
-        private Uri serverUri;
+        public Uri ServerUri { get; private set; }
 
-        private String updateFileName;
+        public String UpdateFileName { get; private set; }
 
         public HttpDataSource(String uri, String updateFileName)
             : this(new Uri(uri, UriKind.Absolute), updateFileName)
@@ -28,25 +28,37 @@ namespace UpNet.Core.DataSource
             Contract.Requires<ArgumentNullException>(uri != null);
             Contract.Requires<ArgumentNullException>(updateFileName != null);
 
-            this.serverUri = uri;
-            this.updateFileName = updateFileName;
+            this.ServerUri = uri;
+            this.UpdateFileName = updateFileName;
         }
 
         public Task<Stream> GetItemAsync(String dataSourcePath)
         {
             using (HttpClient client = new HttpClient())
             {
-                return client.GetStreamAsync(new Uri(this.serverUri, dataSourcePath));
+                return client.GetStreamAsync(new Uri(this.ServerUri, dataSourcePath));
             }
         }
 
         public async Task<Update> GetUpdateAsync()
         {
             using (HttpClient client = new HttpClient())
+            using (Stream updateStream = await client.GetStreamAsync(new Uri(this.ServerUri, this.UpdateFileName)))
             {
-                String json = await client.GetStringAsync(new Uri(this.serverUri, this.updateFileName));
-                return await Task.Run(() => JsonConvert.DeserializeObject<Update>(json));
+                return await Task.Run(() =>
+                {
+                    Update update = (Update)new DataContractSerializer(typeof(Update)).ReadObject(updateStream);
+                    update.DataSource = this;
+                    return update;
+                });
             }
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(this.ServerUri != null);
+            Contract.Invariant(this.UpdateFileName != null);
         }
     }
 }

@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UpNet.Core.DataSource;
 
 namespace UpNet.Core.Test
 {
@@ -9,106 +14,95 @@ namespace UpNet.Core.Test
     public class UpdateTest
     {
         [TestMethod]
-        public void TestUpdateCreation()
+        public void TestUpdateSerialization()
         {
-            try
+            Update update = this.CreateUpdate();
+            using (FileStream fs = File.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Update.xml")))
             {
-                new Update(
-                    new[] { 
-                        new Patch(
-                            new[] { 
-                                new Change(FileAction.AddOrReplace, "TestFile1", "/path/to/TestFile1", "abcdefghijklm"),
-                                new Change(FileAction.AddOrReplace, "TestFile2", "/path/to/TestFile2", "asdfjklasdfja"),
-                                new Change(FileAction.AddOrReplace, "TestFile3", "/path/to/TestFile3", "asdfjklasdfja")
-                            },
-                            new UserMeta(DateTime.Now, "This is a test release!"),
-                            new Version(1, 0, 3, 3534)
-                        ),
-                        new Patch(
-                            new[] { 
-                                new Change(FileAction.Delete, "TestFile1", "/path/to/TestFile1", "abcdefghijklm"),
-                                new Change(FileAction.AddOrReplace, "TestFile2", "/path/to/TestFile2", "asdfjklasdfja"),
-                                new Change(FileAction.AddOrReplace, "TestFile3", "/path/to/TestFile3", "asdfjklasdfja")
-                            },
-                            new UserMeta(DateTime.Now, "This is a test release, too!"),
-                            new Version(1, 0, 7, 6754)
-                        ),
-                    }
-                );
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail(
-                    String.Format(
-                        "An exception occured: '{0}'",
-                        ex.ToString()
-                    ),
-                    ex
-                );
+                DataContractSerializer serializer = new DataContractSerializer(typeof(Update));
+                serializer.WriteObject(fs, update);
+
+                fs.Position = 0;
+
+                Update deserializedUpdate = (Update)serializer.ReadObject(fs);
+                Assert.AreEqual(deserializedUpdate.Patches.Count(), update.Patches.Count());
+                Assert.AreEqual(deserializedUpdate.LatestVersion, update.LatestVersion);
+                for (int i = 0; i < update.Patches.Count(); i++)
+                {
+                    Assert.AreEqual(deserializedUpdate.ElementAt(i).ChangeCount, update.ElementAt(i).ChangeCount);
+                }
             }
         }
 
         [TestMethod]
-        public void TestUpdateSerialization()
+        public void TestDataSourceSetter()
         {
+            Update update = this.CreateUpdate();
+            Uri serverUri = new Uri("http://test.com/");
+
             try
             {
-                Update update = new Update(
-                    new[] { 
-                        new Patch(
-                            new[] { 
-                                new Change(FileAction.AddOrReplace, "TestFile1", "/path/to/TestFile1", "abcdefghijklm"),
-                                new Change(FileAction.AddOrReplace, "TestFile2", "/path/to/TestFile2", "asdfjklasdfja"),
-                                new Change(FileAction.AddOrReplace, "TestFile3", "/path/to/TestFile3", "asdfjklasdfja")
-                            },
-                            new UserMeta(DateTime.Now, "This is a test release!"),
-                            new Version(1, 0, 3, 3534)
-                        ),
-                        new Patch(
-                            new[] { 
-                                new Change(FileAction.Delete, "TestFile1", "/path/to/TestFile1", "abcdefghijklm"),
-                                new Change(FileAction.AddOrReplace, "TestFile2", "/path/to/TestFile2", "asdfjklasdfja"),
-                                new Change(FileAction.AddOrReplace, "TestFile3", "/path/to/TestFile3", "asdfjklasdfja")
-                            },
-                            new UserMeta(DateTime.Now, "This is a test release, too!"),
-                            new Version(1, 0, 7, 6754)
-                        ),
-                    }
-                );
-
-                String json = JsonConvert.SerializeObject(update, Formatting.Indented);
-                try
-                {
-                    System.IO.File.WriteAllText(
-                        System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Update.json"),
-                        json
-                    );
-                }
-                catch { }
-
-                try
-                {
-                    JContainer.Parse(json);
-                }
-                catch (Exception ex)
-                {
-                    Assert.Fail(
-                        "The json was probably malformatted! See: {0}.",
-                        ex.ToString()
-                    );
-                }
+                update.DataSource = null;
+            }
+            catch (ArgumentNullException)
+            {
+                
             }
             catch (Exception ex)
             {
-                Assert.Fail(
-                    String.Format(
-                        "An exception occured: '{1}'",
-                        ex.GetType().AssemblyQualifiedName,
-                        ex.ToString()
-                    ),
-                    ex
-                );
+                Assert.Fail(ex.ToString());
             }
+
+            try
+            {
+                update.DataSource = new HttpDataSource(serverUri, "test.xml");
+                update.DataSource = new HttpDataSource(serverUri, "test2.xml");
+            }
+            catch (ArgumentNullException)
+            {
+
+            }
+            catch (InvalidOperationException)
+            {
+
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail(ex.ToString());
+            }
+
+            Assert.IsNotNull(update.DataSource);
+
+            Assert.AreEqual(((HttpDataSource)update.DataSource).ServerUri, serverUri);
+            Assert.AreEqual(((HttpDataSource)update.DataSource).UpdateFileName, "test.xml");
+        }
+
+        private Update CreateUpdate()
+        {
+            return new Update(
+                new[] { 
+                    new Patch(
+                        new Change[] { 
+                            new AddOrReplaceChange("TestFile1", "/path/to/TestFile1", "asdfjklasdfja"),
+                            new AddOrReplaceChange("TestFile2", "/path/to/TestFile2", "asdfjklasdfja"),
+                            new DeleteChange("/path/to/TestFile3")
+                        },
+                        new UserMeta(DateTime.Now, "This is a test release!"),
+                        new Version(1, 0, 3, 3534)
+                    ),
+                    new Patch(
+                        new Change[] {
+                            new DeleteChange("/path/to/TestFile1"),
+                            new AddOrReplaceChange("TestFile4", "/path/to/TestFile4", "abcdefghijklmnop"),
+                            new AddOrReplaceChange("TestFile5", "/path/to/TestFile5", "abcdefghijklmnop"),
+                            new AddOrReplaceChange("TestFile6", "/path/to/TestFile6", "abcdefghijklmnop"),
+                            new AddOrReplaceChange("TestFile7", "/path/to/TestFile7", "abcdefghijklmnop")
+                        },
+                        new UserMeta(DateTime.Now, "This is a test release, too!"),
+                        new Version(1, 1, 0, 2344)
+                    )
+                }
+            );
         }
     }
 }

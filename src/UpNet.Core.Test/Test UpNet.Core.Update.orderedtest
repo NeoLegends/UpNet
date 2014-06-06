@@ -1,7 +1,0 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<OrderedTest name="Test UpNet.Core.Update" storage="e:\users\moritz\documents\development\repositories\upnet\src\upnet.core.test\test upnet.core.update.orderedtest" id="7279cba9-1bbb-4e62-8825-0b3fdbb45db8" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
-  <TestLinks>
-    <TestLink id="7e6f531f-350c-5052-798e-ab17c11dad2b" name="TestUpdateCreation" storage="bin\debug\upnet.core.test.dll" type="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestElement, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.ObjectModel, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <TestLink id="e0dc792a-13dc-5ce2-a5e3-c6b559be6339" name="TestUpdateSerialization" storage="bin\debug\upnet.core.test.dll" type="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestElement, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.ObjectModel, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  </TestLinks>
-</OrderedTest>

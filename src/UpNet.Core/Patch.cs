@@ -13,7 +13,7 @@ using UpNet.Core.DataSource;
 namespace UpNet.Core
 {
     [DataContract]
-    public class Patch
+    public class Patch : IEnumerable<Change>
     {
         [DataMember]
         public IEnumerable<Change> Changes { get; private set; }
@@ -51,8 +51,8 @@ namespace UpNet.Core
             Contract.Requires<ArgumentNullException>(localPath != null);
             Contract.Requires<InvalidOperationException>(this.Changes != null);
 
-            return Task.WhenAll(this.Changes.OrderByDescending(change => change.Action)
-                                            .Select(change => change.Apply(dataSource, localPath))
+            return Task.WhenAll(this.Changes.OrderByDescending(change => change.Priority)
+                                            .Select(change => change.ApplyAsync(dataSource, localPath))
             );
         }
 
@@ -62,9 +62,20 @@ namespace UpNet.Core
             Contract.Requires<ArgumentNullException>(localPath != null);
             Contract.Requires<InvalidOperationException>(this.Changes != null);
 
-            return Task.WhenAll(this.Changes.OrderByDescending(change => change.Action)
-                                            .Select(change => change.FinishApply(dataSource, localPath, updateSucceeded))
+            return Task.WhenAll(this.Changes.OrderByDescending(change => change.Priority)
+                                            .Select(change => change.FinishApplyAsync(dataSource, localPath, updateSucceeded))
             );
+        }
+
+        public IEnumerator<Change> GetEnumerator()
+        {
+            IEnumerable<Change> changes = this.Changes;
+            return (changes != null) ? changes.GetEnumerator() : null;
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
         }
     }
 }

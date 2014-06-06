@@ -17,8 +17,26 @@ namespace UpNet.Core
     {
         public event ProgressChangedEventHandler PatchProgressChanged;
 
+        private IDataSource _DataSource;
+
         [IgnoreDataMember]
-        public IDataSource DataSource { get; private set; }
+        public IDataSource DataSource
+        {
+            get
+            {
+                return _DataSource;
+            }
+            set
+            {
+                if (value != null)
+                {
+                    if (Interlocked.CompareExchange(ref _DataSource, value, null) != null)
+                    {
+                        throw new InvalidOperationException("Once it has been set, DataSource cannot be set again.");
+                    }
+                }
+            }
+        }
 
         [DataMember]
         public IEnumerable<Patch> Patches { get; private set; }
@@ -53,7 +71,10 @@ namespace UpNet.Core
         {
             Contract.Requires<ArgumentNullException>(patches != null);
 
-            this.DataSource = dataSource;
+            if (dataSource != null)
+            {
+                this.DataSource = dataSource;
+            }
             this.Patches = patches.ToImmutableList();
         }
 
@@ -105,6 +126,15 @@ namespace UpNet.Core
             return this.GetEnumerator();
         }
 
+        [OnDeserialized]
+        public void OnDeserialized(StreamingContext context)
+        {
+            if (context.Context != null)
+            {
+                this.DataSource = (IDataSource)context.Context;
+            }
+        }
+
         private void RaisePatchProgessChanged(int percentage, object state = null)
         {
             ProgressChangedEventHandler handler = this.PatchProgressChanged;
@@ -118,7 +148,7 @@ namespace UpNet.Core
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
 
-            return new Update(await dataSource.GetUpdateAsync(), dataSource);
+            return await dataSource.GetUpdateAsync();
         }
     }
 }
