@@ -78,7 +78,7 @@ namespace UpNet.Core
             this.Patches = patches.ToImmutableList();
         }
 
-        public async Task Apply(String localPath, Version currentVersion)
+        public async Task ApplyAsync(String localPath, Version currentVersion)
         {
             Contract.Requires<ArgumentNullException>(localPath != null);
             Contract.Requires<ArgumentNullException>(currentVersion != null);
@@ -87,15 +87,15 @@ namespace UpNet.Core
             IEnumerable<Patch> patchesToApply = this.Patches.Where(patch => patch.Version > currentVersion).OrderBy(patch => patch.Version);
             bool updateSuccess = true;
 
-            int totalPatchCount = Math.Max(patchesToApply.Count(), 1) * 2;
+            int totalPatchCount = Math.Max(patchesToApply.Count(), 1) * 2; // Times two because of two-stage updating
             int currentPatchCount = 0;
 
             try
             {
                 foreach (Patch patch in patchesToApply)
                 {
-                    await patch.Apply(this.DataSource, localPath);
-                    this.RaisePatchProgessChanged(Interlocked.Increment(ref currentPatchCount) / totalPatchCount, patch.Version);
+                    await patch.ApplyAsync(this.DataSource, localPath);
+                    this.RaisePatchProgessChanged(++currentPatchCount / totalPatchCount, patch.Version);
                 }
             }
             catch 
@@ -105,8 +105,8 @@ namespace UpNet.Core
 
             foreach (Patch patch in patchesToApply)
             {
-                await patch.FinishApply(this.DataSource, localPath, updateSuccess);
-                this.RaisePatchProgessChanged(Interlocked.Increment(ref currentPatchCount) / totalPatchCount, patch.Version);
+                await patch.FinishApplyAsync(this.DataSource, localPath, updateSuccess);
+                this.RaisePatchProgessChanged(++currentPatchCount / totalPatchCount, patch.Version);
             }
         }
 
@@ -144,7 +144,7 @@ namespace UpNet.Core
             }
         }
 
-        public static async Task<Update> LoadFrom(IDataSource dataSource)
+        public static async Task<Update> LoadFromAsync(IDataSource dataSource)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
 

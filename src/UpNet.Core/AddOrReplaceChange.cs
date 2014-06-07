@@ -34,7 +34,7 @@ namespace UpNet.Core
         public override async Task ApplyAsync(IDataSource dataSource, String localPath)
         {
             String fullLocalFilePath = Path.Combine(localPath, this.RelativePath);
-            using (FileStream fs = new FileStream(fullLocalFilePath + ".update", FileMode.Create, FileAccess.Write))
+            using (FileStream fs = new FileStream(fullLocalFilePath + ".update", FileMode.Create, FileAccess.ReadWrite))
             {
                 using (Stream dataStream = await dataSource.GetItemAsync(this.DataSourcePath))
                 {

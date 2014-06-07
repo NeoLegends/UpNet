@@ -43,7 +43,7 @@ namespace UpNet.Core
             this.Version = version;
         }
 
-        public Task Apply(IDataSource dataSource, String localPath)
+        public Task ApplyAsync(IDataSource dataSource, String localPath)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
             Contract.Requires<ArgumentNullException>(localPath != null);
@@ -54,7 +54,7 @@ namespace UpNet.Core
             );
         }
 
-        public Task FinishApply(IDataSource dataSource, String localPath, bool updateSucceeded)
+        public Task FinishApplyAsync(IDataSource dataSource, String localPath, bool updateSucceeded)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
             Contract.Requires<ArgumentNullException>(localPath != null);

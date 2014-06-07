@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -14,24 +15,9 @@ namespace UpNet.Core.Test
     public class UpdateTest
     {
         [TestMethod]
-        public void TestUpdateSerialization()
+        public Task TestApplying()
         {
-            Update update = this.CreateUpdate();
-            using (FileStream fs = File.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Update.xml")))
-            {
-                DataContractSerializer serializer = new DataContractSerializer(typeof(Update));
-                serializer.WriteObject(fs, update);
-
-                fs.Position = 0;
-
-                Update deserializedUpdate = (Update)serializer.ReadObject(fs);
-                Assert.AreEqual(deserializedUpdate.Patches.Count(), update.Patches.Count());
-                Assert.AreEqual(deserializedUpdate.LatestVersion, update.LatestVersion);
-                for (int i = 0; i < update.Patches.Count(); i++)
-                {
-                    Assert.AreEqual(deserializedUpdate.ElementAt(i).ChangeCount, update.ElementAt(i).ChangeCount);
-                }
-            }
+            throw new NotImplementedException();
         }
 
         [TestMethod]
@@ -46,7 +32,7 @@ namespace UpNet.Core.Test
             }
             catch (ArgumentNullException)
             {
-                
+
             }
             catch (Exception ex)
             {
@@ -72,9 +58,29 @@ namespace UpNet.Core.Test
             }
 
             Assert.IsNotNull(update.DataSource);
-
             Assert.AreEqual(((HttpDataSource)update.DataSource).ServerUri, serverUri);
             Assert.AreEqual(((HttpDataSource)update.DataSource).UpdateFileName, "test.xml");
+        }
+
+        [TestMethod]
+        public void TestSerialization()
+        {
+            Update update = this.CreateUpdate();
+            using (FileStream fs = File.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Update.xml")))
+            {
+                DataContractSerializer serializer = new DataContractSerializer(typeof(Update));
+                serializer.WriteObject(fs, update);
+
+                fs.Position = 0;
+
+                Update deserializedUpdate = (Update)serializer.ReadObject(fs);
+                Assert.AreEqual(deserializedUpdate.Patches.Count(), update.Patches.Count());
+                Assert.AreEqual(deserializedUpdate.LatestVersion, update.LatestVersion);
+                for (int i = 0; i < update.Patches.Count(); i++)
+                {
+                    Assert.AreEqual(deserializedUpdate.ElementAt(i).ChangeCount, update.ElementAt(i).ChangeCount);
+                }
+            }
         }
 
         private Update CreateUpdate()
