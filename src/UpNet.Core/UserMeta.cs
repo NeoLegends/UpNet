@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace UpNet.Core
 {
     [DataContract]
-    public struct UserMeta
+    public struct UserMeta : IEquatable<UserMeta>
     {
         [DataMember]
         public DateTime ReleaseDate { get; private set; }
@@ -22,6 +22,41 @@ namespace UpNet.Core
         {
             this.ReleaseDate = releaseDate;
             this.ReleaseNotes = releaseNotes;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(obj, null))
+                return false;
+            if (ReferenceEquals(obj, this))
+                return true;
+
+            return this.Equals((UserMeta)obj);
+        }
+
+        public bool Equals(UserMeta other)
+        {
+            return (this.ReleaseDate == other.ReleaseDate) && (this.ReleaseNotes == other.ReleaseNotes);
+        }
+
+        public override int GetHashCode()
+        {
+            return new { this.ReleaseDate, this.ReleaseNotes }.GetHashCode();
+        }
+
+        public static bool operator ==(UserMeta left, UserMeta right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (ReferenceEquals(left, null) || ReferenceEquals(right, null))
+                return false;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(UserMeta left, UserMeta right)
+        {
+            return !(left == right);
         }
     }
 }

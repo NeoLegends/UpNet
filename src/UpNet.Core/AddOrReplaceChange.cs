@@ -12,7 +12,7 @@ using UpNet.Core.DataSource;
 namespace UpNet.Core
 {
     [DataContract]
-    public class AddOrReplaceChange : Change
+    public class AddOrReplaceChange : Change, IEquatable<AddOrReplaceChange>
     {
         [DataMember]
         public String DataSourcePath { get; private set; }
@@ -83,7 +83,18 @@ namespace UpNet.Core
                 return true;
 
             AddOrReplaceChange change = obj as AddOrReplaceChange;
-            return (obj != null) ? (this == change) : false;
+            return (obj != null) ? this.Equals(change) : false;
+        }
+
+        public bool Equals(AddOrReplaceChange other)
+        {
+            if (ReferenceEquals(other, null))
+                return false;
+            if (ReferenceEquals(other, this))
+                return true;
+
+            return base.Equals(other) &&
+                   (this.DataSourcePath == other.DataSourcePath) && (this.Sha1 == other.Sha1);
         }
 
         public override int GetHashCode()
@@ -98,8 +109,7 @@ namespace UpNet.Core
             if (ReferenceEquals(left, null) || ReferenceEquals(right, null))
                 return false;
 
-            return (left.DataSourcePath == right.DataSourcePath) && (left.Priority == right.Priority) &&
-                   (left.RelativePath == right.RelativePath) && (left.Sha1 == right.Sha1);
+            return left.Equals(right);
         }
 
         public static bool operator !=(AddOrReplaceChange left, AddOrReplaceChange right)

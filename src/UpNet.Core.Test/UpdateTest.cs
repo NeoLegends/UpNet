@@ -78,7 +78,7 @@ namespace UpNet.Core.Test
                 Assert.AreEqual(deserializedUpdate.LatestVersion, update.LatestVersion);
                 for (int i = 0; i < update.Patches.Count(); i++)
                 {
-                    Assert.AreEqual(deserializedUpdate.ElementAt(i).ChangeCount, update.ElementAt(i).ChangeCount);
+                    Assert.AreEqual(deserializedUpdate.ElementAt(i).Count, update.ElementAt(i).Count);
                 }
             }
         }

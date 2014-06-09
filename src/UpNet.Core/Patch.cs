@@ -11,7 +11,7 @@ using UpNet.Core.DataSource;
 namespace UpNet.Core
 {
     [DataContract]
-    public class Patch : IEnumerable<Change>
+    public class Patch : IEnumerable<Change>, IEquatable<Patch>
     {
         [DataMember]
         public IEnumerable<Change> Changes { get; private set; }
@@ -22,7 +22,7 @@ namespace UpNet.Core
         [DataMember]
         public Version Version { get; private set; }
 
-        public int ChangeCount
+        public int Count
         {
             get
             {
@@ -65,6 +65,28 @@ namespace UpNet.Core
             );
         }
 
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(obj, null))
+                return false;
+            if (ReferenceEquals(obj, this))
+                return true;
+
+            Patch patch = obj as Patch;
+            return (patch != null) ? this.Equals(patch) : false;
+        }
+
+        public bool Equals(Patch other)
+        {
+            if (ReferenceEquals(other, null))
+                return false;
+            if (ReferenceEquals(other, this))
+                return true;
+
+            return (this.Count == other.Count) && (this.Changes.SequenceEqual(other.Changes)) && 
+                   (this.Meta == other.Meta) && (this.Version == other.Version);
+        }
+
         public IEnumerator<Change> GetEnumerator()
         {
             IEnumerable<Change> changes = this.Changes;
@@ -74,6 +96,26 @@ namespace UpNet.Core
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+
+        public override int GetHashCode()
+        {
+            return new { ChangeCount = this.Count, this.Changes, this.Meta, this.Version }.GetHashCode();
+        }
+
+        public static bool operator ==(Patch left, Patch right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (ReferenceEquals(left, null) || ReferenceEquals(right, null))
+                return false;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Patch left, Patch right)
+        {
+            return !(left == right);
         }
     }
 }

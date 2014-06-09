@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace UpNet.Core
 {
     [DataContract]
-    public class DeleteChange : Change
+    public class DeleteChange : Change, IEquatable<DeleteChange>
     {
         public DeleteChange(String relativePath)
             : base(int.MaxValue, relativePath)
@@ -38,7 +38,17 @@ namespace UpNet.Core
                 return true;
 
             DeleteChange change = obj as DeleteChange;
-            return (obj != null) ? (this == change) : false;
+            return (obj != null) ? this.Equals(change) : false;
+        }
+
+        public bool Equals(DeleteChange other)
+        {
+            if (ReferenceEquals(other, null))
+                return false;
+            if (ReferenceEquals(other, this))
+                return true;
+
+            return base.Equals(other);
         }
 
         public override int GetHashCode()
@@ -53,7 +63,7 @@ namespace UpNet.Core
             if (ReferenceEquals(left, null) || ReferenceEquals(right, null))
                 return false;
 
-            return (left.Priority == right.Priority) && (left.RelativePath == right.RelativePath);
+            return left.Equals(right);
         }
 
         public static bool operator !=(DeleteChange left, DeleteChange right)

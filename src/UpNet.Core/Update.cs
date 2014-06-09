@@ -13,7 +13,7 @@ using UpNet.Core.DataSource;
 namespace UpNet.Core
 {
     [DataContract]
-    public class Update : IEnumerable<Patch>
+    public class Update : IEnumerable<Patch>, IEquatable<Update>
     {
         public event ProgressChangedEventHandler PatchProgressChanged;
 
@@ -110,9 +110,25 @@ namespace UpNet.Core
             }
         }
 
-        public bool UpdatesAvailable(Version currentVersion)
+        public override bool Equals(object obj)
         {
-            return this.LatestVersion > currentVersion;
+            if (ReferenceEquals(obj, null))
+                return false;
+            if (ReferenceEquals(obj, this))
+                return true;
+
+            Update update = obj as Update;
+            return (update != null) ? this.Equals(update) : false;
+        }
+
+        public bool Equals(Update other)
+        {
+            if (ReferenceEquals(other, null))
+                return false;
+            if (ReferenceEquals(other, this))
+                return true;
+
+            return (this.Count == other.Count) && this.Patches.SequenceEqual(other.Patches);
         }
 
         public IEnumerator<Patch> GetEnumerator()
@@ -126,6 +142,11 @@ namespace UpNet.Core
             return this.GetEnumerator();
         }
 
+        public override int GetHashCode()
+        {
+            return new { this.LatestVersion, this.Patches }.GetHashCode();
+        }
+
         [OnDeserialized]
         public void OnDeserialized(StreamingContext context)
         {
@@ -133,6 +154,11 @@ namespace UpNet.Core
             {
                 this.DataSource = (IDataSource)context.Context;
             }
+        }
+
+        public bool UpdatesAvailable(Version currentVersion)
+        {
+            return this.LatestVersion > currentVersion;
         }
 
         private void RaisePatchProgessChanged(int percentage, object state = null)
