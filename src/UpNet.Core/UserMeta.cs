@@ -28,10 +28,8 @@ namespace UpNet.Core
         {
             if (ReferenceEquals(obj, null))
                 return false;
-            if (ReferenceEquals(obj, this))
-                return true;
 
-            return this.Equals((UserMeta)obj);
+            return (obj is UserMeta) ? this.Equals((UserMeta)obj) : false;
         }
 
         public bool Equals(UserMeta other)

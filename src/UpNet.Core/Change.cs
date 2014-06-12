@@ -14,15 +14,15 @@ namespace UpNet.Core
     [ContractClass(typeof(ChangeContracts))]
     public abstract class Change : IEquatable<Change>
     {
-        [IgnoreDataMember]
+        [DataMember]
         public int Priority { get; protected set; }
 
         [DataMember]
         public String RelativePath { get; protected set; }
 
-        public Change() { }
+        protected Change() { }
 
-        public Change(int priority, String relativePath)
+        protected Change(String relativePath, int priority)
         {
             this.Priority = priority;
             this.RelativePath = relativePath;

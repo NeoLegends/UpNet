@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using UpNet.Core;
 
 namespace UpNet.Core.DataSource
 {
@@ -26,7 +27,7 @@ namespace UpNet.Core.DataSource
 
         async Task<Stream> IDataSource.GetItemAsync(String dataSourcePath)
         {
-            return await this.GetItemAsync(dataSourcePath);
+            return await this.GetItemAsync(dataSourcePath).ConfigureAwait(false);
         }
 
         public Task<FileStream> GetItemAsync(String dataSourcePath)

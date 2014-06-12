@@ -176,5 +176,11 @@ namespace UpNet.Core
 
             return await dataSource.GetUpdateAsync();
         }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(this.Patches != null);
+        }
     }
 }

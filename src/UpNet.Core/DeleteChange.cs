@@ -13,7 +13,13 @@ namespace UpNet.Core
     public class DeleteChange : Change, IEquatable<DeleteChange>
     {
         public DeleteChange(String relativePath)
-            : base(int.MaxValue, relativePath)
+            : this(relativePath, int.MaxValue)
+        {
+            Contract.Requires<ArgumentNullException>(relativePath != null);
+        }
+
+        public DeleteChange(String relativePath, int priority)
+            : base(relativePath, priority)
         {
             Contract.Requires<ArgumentNullException>(relativePath != null);
         }
@@ -54,6 +60,12 @@ namespace UpNet.Core
         public override int GetHashCode()
         {
             return new { this.Priority, this.RelativePath }.GetHashCode();
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(this.RelativePath != null);
         }
 
         public static bool operator ==(DeleteChange left, DeleteChange right)

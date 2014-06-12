@@ -103,6 +103,12 @@ namespace UpNet.Core
             return new { ChangeCount = this.Count, this.Changes, this.Meta, this.Version }.GetHashCode();
         }
 
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(this.Changes != null);
+        }
+
         public static bool operator ==(Patch left, Patch right)
         {
             if (ReferenceEquals(left, right))

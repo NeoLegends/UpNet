@@ -21,7 +21,15 @@ namespace UpNet.Core
         public String Sha1 { get; private set; }
 
         public AddOrReplaceChange(String dataSourcePath, String relativePath, String sha1)
-            : base(0, relativePath)
+            : this(dataSourcePath, relativePath, sha1, 0)
+        {
+            Contract.Requires<ArgumentNullException>(dataSourcePath != null);
+            Contract.Requires<ArgumentNullException>(relativePath != null);
+            Contract.Requires<ArgumentNullException>(sha1 != null);
+        }
+
+        public AddOrReplaceChange(String dataSourcePath, String relativePath, String sha1, int priority)
+            : base(relativePath, priority)
         {
             Contract.Requires<ArgumentNullException>(dataSourcePath != null);
             Contract.Requires<ArgumentNullException>(relativePath != null);
@@ -36,15 +44,15 @@ namespace UpNet.Core
             String fullLocalFilePath = Path.Combine(localPath, this.RelativePath);
             using (FileStream fs = new FileStream(fullLocalFilePath + ".update", FileMode.Create, FileAccess.ReadWrite))
             {
-                using (Stream dataStream = await dataSource.GetItemAsync(this.DataSourcePath))
+                using (Stream dataStream = await dataSource.GetItemAsync(this.DataSourcePath).ConfigureAwait(false))
                 {
-                    await dataStream.CopyToAsync(fs);
+                    await dataStream.CopyToAsync(fs).ConfigureAwait(false);
                 }
 
                 fs.Position = 0;
                 using (SHA1 sha1 = SHA1.Create())
                 {
-                    byte[] computedHash = await Task.Run(() => sha1.ComputeHash(fs));
+                    byte[] computedHash = await Task.Run(() => sha1.ComputeHash(fs)).ConfigureAwait(false);
                     if (!computedHash.SequenceEqual(Convert.FromBase64String(this.Sha1)))
                     {
                         throw new InvalidOperationException(
@@ -100,6 +108,14 @@ namespace UpNet.Core
         public override int GetHashCode()
         {
             return new { this.DataSourcePath, this.Priority, this.RelativePath, this.Sha1 }.GetHashCode();
+        }
+
+        [ContractInvariantMethod]
+        private void ObjectInvariant()
+        {
+            Contract.Invariant(this.DataSourcePath != null);
+            Contract.Invariant(this.RelativePath != null);
+            Contract.Invariant(this.Sha1 != null);
         }
 
         public static bool operator ==(AddOrReplaceChange left, AddOrReplaceChange right)

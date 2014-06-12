@@ -43,14 +43,14 @@ namespace UpNet.Core.DataSource
         public async Task<Update> GetUpdateAsync()
         {
             using (HttpClient client = new HttpClient())
-            using (Stream updateStream = await client.GetStreamAsync(new Uri(this.ServerUri, this.UpdateFileName)))
+            using (Stream updateStream = await client.GetStreamAsync(new Uri(this.ServerUri, this.UpdateFileName)).ConfigureAwait(false))
             {
                 return await Task.Run(() =>
                 {
                     Update update = (Update)new DataContractSerializer(typeof(Update)).ReadObject(updateStream);
                     update.DataSource = this;
                     return update;
-                });
+                }).ConfigureAwait(false);
             }
         }
 
