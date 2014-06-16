@@ -15,6 +15,7 @@ namespace UpNet.Core.Test
     public class UpdateTest
     {
         [TestMethod]
+        [ExpectedException(typeof(NotImplementedException))]
         public Task TestApplying()
         {
             throw new NotImplementedException();
