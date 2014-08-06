@@ -14,25 +14,25 @@ namespace UpNet.Core.DataSource
     {
         public Uri ServerUri { get; private set; }
 
-        public String UpdateFileName { get; private set; }
+        public string UpdateFileName { get; private set; }
 
-        public HttpDataSource(String uri, String updateFileName)
+        public HttpDataSource(string uri, string updateFileName)
             : this(new Uri(uri, UriKind.Absolute), updateFileName)
         {
-            Contract.Requires<ArgumentNullException>(uri != null);
-            Contract.Requires<ArgumentNullException>(updateFileName != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(uri));
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(updateFileName));
         }
 
-        public HttpDataSource(Uri uri, String updateFileName)
+        public HttpDataSource(Uri uri, string updateFileName)
         {
             Contract.Requires<ArgumentNullException>(uri != null);
-            Contract.Requires<ArgumentNullException>(updateFileName != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(updateFileName));
 
             this.ServerUri = uri;
             this.UpdateFileName = updateFileName;
         }
 
-        public Task<Stream> GetItemAsync(String dataSourcePath)
+        public Task<Stream> GetItemAsync(string dataSourcePath)
         {
             using (HttpClient client = new HttpClient())
             {

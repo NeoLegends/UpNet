@@ -11,7 +11,7 @@ namespace UpNet.Core.DataSource
     [ContractClass(typeof(IDataSourceContracts))]
     public interface IDataSource
     {
-        Task<Stream> GetItemAsync(String dataSourcePath);
+        Task<Stream> GetItemAsync(string dataSourcePath);
 
         Task<Update> GetUpdateAsync();
     }
@@ -19,9 +19,9 @@ namespace UpNet.Core.DataSource
     [ContractClassFor(typeof(IDataSource))]
     abstract class IDataSourceContracts : IDataSource
     {
-        Task<Stream> IDataSource.GetItemAsync(String dataSourcePath)
+        Task<Stream> IDataSource.GetItemAsync(string dataSourcePath)
         {
-            Contract.Requires<ArgumentNullException>(dataSourcePath != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(dataSourcePath));
 
             return null;
         }

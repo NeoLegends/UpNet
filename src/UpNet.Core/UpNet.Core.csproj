@@ -127,6 +127,7 @@
     <Compile Include="DataSource\HttpDataSource.cs" />
     <Compile Include="DataSource\IDataSource.cs" />
     <Compile Include="DeleteChange.cs" />
+    <Compile Include="MoveChange.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Update.cs" />
     <Compile Include="Patch.cs" />

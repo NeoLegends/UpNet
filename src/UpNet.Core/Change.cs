@@ -10,27 +10,27 @@ using UpNet.Core.DataSource;
 namespace UpNet.Core
 {
     [DataContract]
-    [KnownType(typeof(AddOrReplaceChange)), KnownType(typeof(DeleteChange))]
     [ContractClass(typeof(ChangeContracts))]
+    [KnownType(typeof(AddOrReplaceChange)), KnownType(typeof(DeleteChange)), KnownType(typeof(MoveChange))]
     public abstract class Change : IEquatable<Change>
     {
         [DataMember]
         public int Priority { get; protected set; }
 
         [DataMember]
-        public String RelativePath { get; protected set; }
+        public string RelativePath { get; protected set; }
 
         protected Change() { }
 
-        protected Change(String relativePath, int priority)
+        protected Change(string relativePath, int priority)
         {
             this.Priority = priority;
             this.RelativePath = relativePath;
         }
 
-        public abstract Task ApplyAsync(IDataSource dataSource, String localPath);
+        public abstract Task ApplyAsync(IDataSource dataSource, string localPath);
 
-        public abstract Task FinishApplyAsync(IDataSource dataSource, String localPath, bool updateSucceeded);
+        public abstract Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded);
 
         public override bool Equals(object obj)
         {
@@ -77,18 +77,18 @@ namespace UpNet.Core
     [ContractClassFor(typeof(Change))]
     abstract class ChangeContracts : Change
     {
-        public override Task ApplyAsync(IDataSource dataSource, String localPath)
+        public override Task ApplyAsync(IDataSource dataSource, string localPath)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
-            Contract.Requires<ArgumentNullException>(localPath != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
 
             return null;
         }
 
-        public override Task FinishApplyAsync(IDataSource dataSource, String localPath, bool updateSucceeded)
+        public override Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
-            Contract.Requires<ArgumentNullException>(localPath != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
 
             return null;
         }

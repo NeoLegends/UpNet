@@ -15,33 +15,33 @@ namespace UpNet.Core
     public class AddOrReplaceChange : Change, IEquatable<AddOrReplaceChange>
     {
         [DataMember]
-        public String DataSourcePath { get; private set; }
+        public string DataSourcePath { get; private set; }
 
         [DataMember]
-        public String Sha1 { get; private set; }
+        public string Sha1 { get; private set; }
 
-        public AddOrReplaceChange(String dataSourcePath, String relativePath, String sha1)
+        public AddOrReplaceChange(string dataSourcePath, string relativePath, string sha1)
             : this(dataSourcePath, relativePath, sha1, 0)
         {
-            Contract.Requires<ArgumentNullException>(dataSourcePath != null);
-            Contract.Requires<ArgumentNullException>(relativePath != null);
-            Contract.Requires<ArgumentNullException>(sha1 != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(dataSourcePath));
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(relativePath));
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(sha1));
         }
 
-        public AddOrReplaceChange(String dataSourcePath, String relativePath, String sha1, int priority)
+        public AddOrReplaceChange(string dataSourcePath, string relativePath, string sha1, int priority)
             : base(relativePath, priority)
         {
-            Contract.Requires<ArgumentNullException>(dataSourcePath != null);
-            Contract.Requires<ArgumentNullException>(relativePath != null);
-            Contract.Requires<ArgumentNullException>(sha1 != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(dataSourcePath));
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(relativePath));
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(sha1));
 
             this.DataSourcePath = dataSourcePath;
             this.Sha1 = sha1;
         }
 
-        public override async Task ApplyAsync(IDataSource dataSource, String localPath)
+        public override async Task ApplyAsync(IDataSource dataSource, string localPath)
         {
-            String fullLocalFilePath = Path.Combine(localPath, this.RelativePath);
+            string fullLocalFilePath = Path.Combine(localPath, this.RelativePath);
             using (FileStream fs = new FileStream(fullLocalFilePath + ".update", FileMode.Create, FileAccess.ReadWrite))
             {
                 using (Stream dataStream = await dataSource.GetItemAsync(this.DataSourcePath).ConfigureAwait(false))
@@ -56,7 +56,7 @@ namespace UpNet.Core
                     if (!computedHash.SequenceEqual(Convert.FromBase64String(this.Sha1)))
                     {
                         throw new InvalidOperationException(
-                            String.Format(
+                            string.Format(
                                 "The computed hash '{0}' didn't match the actual hash '{1}.'",
                                 Convert.ToBase64String(computedHash),
                                 this.Sha1
@@ -67,11 +67,11 @@ namespace UpNet.Core
             }
         }
 
-        public override Task FinishApplyAsync(IDataSource dataSource, String localPath, bool updateSucceeded)
+        public override Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded)
         {
             return Task.Run(() =>
             {
-                String fullLocalFilePath = Path.Combine(localPath, this.RelativePath);
+                string fullLocalFilePath = Path.Combine(localPath, this.RelativePath);
                 if (updateSucceeded)
                 {
                     File.Replace(fullLocalFilePath + ".update", fullLocalFilePath, null);

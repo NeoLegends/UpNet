@@ -14,7 +14,7 @@ namespace UpNet.Core
     public class Patch : IEnumerable<Change>, IEquatable<Patch>
     {
         [DataMember]
-        public IEnumerable<Change> Changes { get; private set; }
+        public ImmutableList<Change> Changes { get; private set; }
 
         [DataMember]
         public UserMeta Meta { get; private set; }
@@ -43,10 +43,10 @@ namespace UpNet.Core
             this.Version = version;
         }
 
-        public Task ApplyAsync(IDataSource dataSource, String localPath)
+        public Task ApplyAsync(IDataSource dataSource, string localPath)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
-            Contract.Requires<ArgumentNullException>(localPath != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
             Contract.Requires<InvalidOperationException>(this.Changes != null);
 
             return Task.WhenAll(this.Changes.OrderByDescending(change => change.Priority)
@@ -54,10 +54,10 @@ namespace UpNet.Core
             );
         }
 
-        public Task FinishApplyAsync(IDataSource dataSource, String localPath, bool updateSucceeded)
+        public Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
-            Contract.Requires<ArgumentNullException>(localPath != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
             Contract.Requires<InvalidOperationException>(this.Changes != null);
 
             return Task.WhenAll(this.Changes.OrderByDescending(change => change.Priority)

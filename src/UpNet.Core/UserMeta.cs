@@ -15,9 +15,9 @@ namespace UpNet.Core
         public DateTime ReleaseDate { get; private set; }
 
         [DataMember]
-        public String ReleaseNotes { get; private set; }
+        public string ReleaseNotes { get; private set; }
 
-        public UserMeta(DateTime releaseDate, String releaseNotes)
+        public UserMeta(DateTime releaseDate, string releaseNotes)
             : this()
         {
             this.ReleaseDate = releaseDate;

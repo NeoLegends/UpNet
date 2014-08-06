@@ -12,28 +12,28 @@ namespace UpNet.Core
     [DataContract]
     public class DeleteChange : Change, IEquatable<DeleteChange>
     {
-        public DeleteChange(String relativePath)
+        public DeleteChange(string relativePath)
             : this(relativePath, int.MaxValue)
         {
             Contract.Requires<ArgumentNullException>(relativePath != null);
         }
 
-        public DeleteChange(String relativePath, int priority)
+        public DeleteChange(string relativePath, int priority)
             : base(relativePath, priority)
         {
             Contract.Requires<ArgumentNullException>(relativePath != null);
         }
 
-        public override Task ApplyAsync(DataSource.IDataSource dataSource, String localPath)
+        public override Task ApplyAsync(DataSource.IDataSource dataSource, string localPath)
         {
             return Task.FromResult(true);
         }
 
-        public override Task FinishApplyAsync(DataSource.IDataSource dataSource, String localPath, bool updateSucceeded)
+        public override Task FinishApplyAsync(DataSource.IDataSource dataSource, string localPath, bool updateSucceeded)
         {
             return updateSucceeded ?
                 Task.Run(() => File.Delete(Path.Combine(localPath, this.RelativePath))) :
-                Task.FromResult(true);
+                Task.FromResult(false);
         }
 
         public override bool Equals(object obj)

@@ -12,26 +12,28 @@ namespace UpNet.Core.DataSource
 {
     public class FileSystemDataSource : IDataSource
     {
-        public String LocalPath { get; private set; }
+        public string LocalPath { get; private set; }
 
-        public String UpdateFilePath { get; private set; }
+        public string UpdateFilePath { get; private set; }
 
-        public FileSystemDataSource(String localPath, String updateFilePath)
+        public FileSystemDataSource(string localPath, string updateFilePath)
         {
-            Contract.Requires<ArgumentNullException>(localPath != null);
-            Contract.Requires<ArgumentNullException>(updateFilePath != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(updateFilePath));
 
             this.LocalPath = localPath;
             this.UpdateFilePath = updateFilePath;
         }
 
-        async Task<Stream> IDataSource.GetItemAsync(String dataSourcePath)
+        async Task<Stream> IDataSource.GetItemAsync(string dataSourcePath)
         {
             return await this.GetItemAsync(dataSourcePath).ConfigureAwait(false);
         }
 
-        public Task<FileStream> GetItemAsync(String dataSourcePath)
+        public Task<FileStream> GetItemAsync(string dataSourcePath)
         {
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(dataSourcePath));
+
             return Task.FromResult(File.OpenRead(Path.Combine(this.LocalPath, dataSourcePath)));
         }
 

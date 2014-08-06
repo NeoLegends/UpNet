@@ -39,7 +39,7 @@ namespace UpNet.Core
         }
 
         [DataMember]
-        public IEnumerable<Patch> Patches { get; private set; }
+        public ImmutableList<Patch> Patches { get; private set; }
 
         public int Count
         {
@@ -59,7 +59,7 @@ namespace UpNet.Core
             }
         }
 
-        private Update() { }
+        private Update() : this(Enumerable.Empty<Patch>()) { }
 
         public Update(IEnumerable<Patch> patches)
             : this(patches, null)
@@ -78,9 +78,9 @@ namespace UpNet.Core
             this.Patches = patches.ToImmutableList();
         }
 
-        public async Task ApplyAsync(String localPath, Version currentVersion)
+        public async Task ApplyAsync(string localPath, Version currentVersion)
         {
-            Contract.Requires<ArgumentNullException>(localPath != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
             Contract.Requires<ArgumentNullException>(currentVersion != null);
             Contract.Requires<InvalidOperationException>(this.DataSource != null);
 
@@ -92,7 +92,7 @@ namespace UpNet.Core
 
             try
             {
-                foreach (Patch patch in patchesToApply)
+                foreach (Patch patch in patchesToApply) // Can't be Task.WhenAll because we need to preserve the order of the patches
                 {
                     await patch.ApplyAsync(this.DataSource, localPath);
                     this.RaisePatchProgessChanged(++currentPatchCount / totalPatchCount, patch.Version);
@@ -105,8 +105,15 @@ namespace UpNet.Core
 
             foreach (Patch patch in patchesToApply)
             {
-                await patch.FinishApplyAsync(this.DataSource, localPath, updateSuccess);
-                this.RaisePatchProgessChanged(++currentPatchCount / totalPatchCount, patch.Version);
+                try
+                {
+                    await patch.FinishApplyAsync(this.DataSource, localPath, updateSuccess);
+                    this.RaisePatchProgessChanged(++currentPatchCount / totalPatchCount, patch.Version);
+                }
+                catch
+                {
+                    
+                }
             }
         }
 
