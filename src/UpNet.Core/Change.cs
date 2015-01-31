@@ -4,20 +4,22 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using UpNet.Core.DataSource;
 
 namespace UpNet.Core
 {
-    [DataContract]
+    [DataContract, JsonObject]
     [ContractClass(typeof(ChangeContracts))]
     [KnownType(typeof(AddOrReplaceChange)), KnownType(typeof(DeleteChange)), KnownType(typeof(MoveChange))]
     public abstract class Change : IEquatable<Change>
     {
-        [DataMember]
+        [DataMember, JsonProperty]
         public int Priority { get; protected set; }
 
-        [DataMember]
+        [DataMember, JsonProperty]
         public string RelativePath { get; protected set; }
 
         protected Change() { }
@@ -28,9 +30,25 @@ namespace UpNet.Core
             this.RelativePath = relativePath;
         }
 
-        public abstract Task ApplyAsync(IDataSource dataSource, string localPath);
+        public Task ApplyAsync(IDataSource dataSource, string localPath)
+        {
+            Contract.Requires<ArgumentNullException>(dataSource != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
 
-        public abstract Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded);
+            return this.ApplyAsync(dataSource, localPath, CancellationToken.None);
+        }
+
+        public abstract Task ApplyAsync(IDataSource dataSource, string localPath, CancellationToken token);
+
+        public Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded)
+        {
+            Contract.Requires<ArgumentNullException>(dataSource != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
+
+            return this.FinishApplyAsync(dataSource, localPath, updateSucceeded, CancellationToken.None);
+        }
+
+        public abstract Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded, CancellationToken token);
 
         public override bool Equals(object obj)
         {
@@ -55,7 +73,13 @@ namespace UpNet.Core
 
         public override int GetHashCode()
         {
-            return new { this.Priority, this.RelativePath }.GetHashCode();
+            unchecked
+            {
+                int hash = 29;
+                hash = hash * 486187739 + this.Priority.GetHashCode();
+                hash = hash * 486187739 + this.RelativePath.GetHashCode();
+                return hash;
+            }
         }
 
         public static bool operator ==(Change left, Change right)
@@ -77,7 +101,7 @@ namespace UpNet.Core
     [ContractClassFor(typeof(Change))]
     abstract class ChangeContracts : Change
     {
-        public override Task ApplyAsync(IDataSource dataSource, string localPath)
+        public override Task ApplyAsync(IDataSource dataSource, string localPath, CancellationToken token)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
             Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
@@ -85,7 +109,7 @@ namespace UpNet.Core
             return null;
         }
 
-        public override Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded)
+        public override Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded, CancellationToken token)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
             Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));

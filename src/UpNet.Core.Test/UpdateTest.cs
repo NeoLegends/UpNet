@@ -42,8 +42,8 @@ namespace UpNet.Core.Test
 
             try
             {
-                update.DataSource = new HttpDataSource(serverUri, "test.xml");
-                update.DataSource = new HttpDataSource(serverUri, "test2.xml");
+                update.DataSource = new HttpDataSource(serverUri, "test.json");
+                update.DataSource = new HttpDataSource(serverUri, "test2.json");
             }
             catch (ArgumentNullException)
             {
@@ -60,21 +60,35 @@ namespace UpNet.Core.Test
 
             Assert.IsNotNull(update.DataSource);
             Assert.AreEqual(((HttpDataSource)update.DataSource).ServerUri, serverUri);
-            Assert.AreEqual(((HttpDataSource)update.DataSource).UpdateFileName, "test.xml");
+            Assert.AreEqual(((HttpDataSource)update.DataSource).UpdateFileName, "test.json");
         }
 
         [TestMethod]
         public void TestSerialization()
         {
             Update update = this.CreateUpdate();
-            using (FileStream fs = File.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Update.xml")))
+            JsonSerializer serializer = new JsonSerializer()
             {
-                DataContractSerializer serializer = new DataContractSerializer(typeof(Update));
-                serializer.WriteObject(fs, update);
+                Formatting = Formatting.Indented
+            };
+            
+            using (JsonTextWriter jtw = new JsonTextWriter(Console.Out))
+            {
+                serializer.Serialize(jtw, update);
+            }
 
-                fs.Position = 0;
-
-                Update deserializedUpdate = (Update)serializer.ReadObject(fs);
+            using (FileStream fs = File.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Update.json")))
+            using (StreamWriter sw = new StreamWriter(fs))
+            using (JsonTextWriter jtw = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(jtw, update);
+            }
+            
+            using (FileStream fs = File.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Update.json")))
+            using (StreamReader sr = new StreamReader(fs))
+            using (JsonTextReader jtr = new JsonTextReader(sr))
+            {
+                Update deserializedUpdate = serializer.Deserialize<Update>(jtr);
                 Assert.AreEqual(deserializedUpdate.Patches.Count(), update.Patches.Count());
                 Assert.AreEqual(deserializedUpdate.LatestVersion, update.LatestVersion);
                 for (int i = 0; i < update.Patches.Count(); i++)

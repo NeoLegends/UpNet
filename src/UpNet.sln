@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpNet.Core", "UpNet.Core\UpNet.Core.csproj", "{158FF5CF-627D-4146-AEE6-C2CD484C03D6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpNet.Core.Test", "UpNet.Core.Test\UpNet.Core.Test.csproj", "{F1E2192B-6511-4436-B690-8EF629A9D5AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpNet", "UpNet\UpNet.csproj", "{734FFB91-7650-4981-A65F-4B84C588448B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{F1E2192B-6511-4436-B690-8EF629A9D5AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F1E2192B-6511-4436-B690-8EF629A9D5AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F1E2192B-6511-4436-B690-8EF629A9D5AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{734FFB91-7650-4981-A65F-4B84C588448B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{734FFB91-7650-4981-A65F-4B84C588448B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{734FFB91-7650-4981-A65F-4B84C588448B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{734FFB91-7650-4981-A65F-4B84C588448B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

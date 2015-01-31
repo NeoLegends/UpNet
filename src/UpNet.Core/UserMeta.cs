@@ -5,16 +5,17 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace UpNet.Core
 {
-    [DataContract]
+    [DataContract, JsonObject]
     public struct UserMeta : IEquatable<UserMeta>
     {
-        [DataMember]
+        [DataMember, JsonProperty]
         public DateTime ReleaseDate { get; private set; }
 
-        [DataMember]
+        [DataMember, JsonProperty]
         public string ReleaseNotes { get; private set; }
 
         public UserMeta(DateTime releaseDate, string releaseNotes)
@@ -39,7 +40,13 @@ namespace UpNet.Core
 
         public override int GetHashCode()
         {
-            return new { this.ReleaseDate, this.ReleaseNotes }.GetHashCode();
+            unchecked
+            {
+                int hash = 29;
+                hash = hash * 486187739 + this.ReleaseDate.GetHashCode();
+                hash = hash * 486187739 + (this.ReleaseNotes ?? string.Empty).GetHashCode();
+                return hash;
+            }
         }
 
         public static bool operator ==(UserMeta left, UserMeta right)

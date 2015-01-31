@@ -8,18 +8,19 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using UpNet.Core.DataSource;
 
 namespace UpNet.Core
 {
-    [DataContract]
+    [DataContract, JsonObject]
     public class Update : IEnumerable<Patch>, IEquatable<Update>
     {
         public event ProgressChangedEventHandler PatchProgressChanged;
 
         private IDataSource _DataSource;
 
-        [IgnoreDataMember]
+        [IgnoreDataMember, JsonIgnore]
         public IDataSource DataSource
         {
             get
@@ -38,9 +39,10 @@ namespace UpNet.Core
             }
         }
 
-        [DataMember]
+        [DataMember, JsonProperty]
         public ImmutableList<Patch> Patches { get; private set; }
 
+        [IgnoreDataMember, JsonIgnore]
         public int Count
         {
             get
@@ -78,42 +80,62 @@ namespace UpNet.Core
             this.Patches = patches.ToImmutableList();
         }
 
-        public async Task ApplyAsync(string localPath, Version currentVersion)
+        public Task ApplyAsync(string localPath, Version currentVersion)
         {
             Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
             Contract.Requires<ArgumentNullException>(currentVersion != null);
             Contract.Requires<InvalidOperationException>(this.DataSource != null);
 
-            IEnumerable<Patch> patchesToApply = this.Patches.Where(patch => patch.Version > currentVersion).OrderBy(patch => patch.Version);
+            return this.ApplyAsync(localPath, currentVersion, CancellationToken.None);
+        }
+
+        public async Task ApplyAsync(string localPath, Version currentVersion, CancellationToken token)
+        {
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
+            Contract.Requires<ArgumentNullException>(currentVersion != null);
+            Contract.Requires<InvalidOperationException>(this.DataSource != null);
+
+            token.ThrowIfCancellationRequested();
+            IEnumerable<Patch> patchesToApply = this.Patches.Where(patch => patch.Version > currentVersion)
+                                                            .OrderBy(patch => patch.Version);
             bool updateSuccess = true;
 
             int totalPatchCount = Math.Max(patchesToApply.Count(), 1) * 2; // Times two because of two-stage updating
             int currentPatchCount = 0;
 
+            token.ThrowIfCancellationRequested();
+            List<Exception> exceptions = new List<Exception>();
             try
             {
                 foreach (Patch patch in patchesToApply) // Can't be Task.WhenAll because we need to preserve the order of the patches
                 {
-                    await patch.ApplyAsync(this.DataSource, localPath);
+                    await patch.ApplyAsync(this.DataSource, localPath, token);
                     this.RaisePatchProgessChanged(++currentPatchCount / totalPatchCount, patch.Version);
                 }
             }
-            catch 
+            catch (Exception ex)
             {
+                exceptions.Add(ex);
                 updateSuccess = false;
             }
 
+            token.ThrowIfCancellationRequested();
             foreach (Patch patch in patchesToApply)
             {
                 try
                 {
-                    await patch.FinishApplyAsync(this.DataSource, localPath, updateSuccess);
+                    await patch.FinishApplyAsync(this.DataSource, localPath, updateSuccess, token);
                     this.RaisePatchProgessChanged(++currentPatchCount / totalPatchCount, patch.Version);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    
+                    exceptions.Add(ex);
                 }
+            }
+
+            if (exceptions.Any())
+            {
+                throw new AggregateException(exceptions);
             }
         }
 
@@ -140,8 +162,7 @@ namespace UpNet.Core
 
         public IEnumerator<Patch> GetEnumerator()
         {
-            IEnumerable<Patch> patches = this.Patches;
-            return (patches != null) ? patches.GetEnumerator() : null;
+            return this.Patches.GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -151,7 +172,13 @@ namespace UpNet.Core
 
         public override int GetHashCode()
         {
-            return new { this.LatestVersion, this.Patches }.GetHashCode();
+            unchecked
+            {
+                int hash = 29;
+                hash = hash * 486187739 + this.LatestVersion.GetHashCode();
+                hash = hash * 486187739 + this.Patches.GetHashCode();
+                return hash;
+            }
         }
 
         [OnDeserialized]
@@ -159,7 +186,7 @@ namespace UpNet.Core
         {
             if (context.Context != null)
             {
-                this.DataSource = (IDataSource)context.Context;
+                this.DataSource = context.Context as IDataSource;
             }
         }
 
@@ -177,11 +204,12 @@ namespace UpNet.Core
             }
         }
 
-        public static async Task<Update> LoadFromAsync(IDataSource dataSource)
+        public static async Task<Update> LoadFromAsync(IDataSource dataSource, CancellationToken token)
         {
             Contract.Requires<ArgumentNullException>(dataSource != null);
 
-            return await dataSource.GetUpdateAsync();
+            token.ThrowIfCancellationRequested();
+            return await dataSource.GetUpdateAsync(token);
         }
 
         [ContractInvariantMethod]

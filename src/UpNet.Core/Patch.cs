@@ -5,23 +5,26 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using UpNet.Core.DataSource;
 
 namespace UpNet.Core
 {
-    [DataContract]
+    [DataContract, JsonObject]
     public class Patch : IEnumerable<Change>, IEquatable<Patch>
     {
-        [DataMember]
+        [DataMember, JsonProperty]
         public ImmutableList<Change> Changes { get; private set; }
 
-        [DataMember]
+        [DataMember, JsonProperty]
         public UserMeta Meta { get; private set; }
 
-        [DataMember]
+        [DataMember, JsonProperty]
         public Version Version { get; private set; }
 
+        [IgnoreDataMember, JsonIgnore]
         public int Count
         {
             get
@@ -49,8 +52,17 @@ namespace UpNet.Core
             Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
             Contract.Requires<InvalidOperationException>(this.Changes != null);
 
+            return this.ApplyAsync(dataSource, localPath, CancellationToken.None);
+        }
+
+        public Task ApplyAsync(IDataSource dataSource, string localPath, CancellationToken token)
+        {
+            Contract.Requires<ArgumentNullException>(dataSource != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
+            Contract.Requires<InvalidOperationException>(this.Changes != null);
+
             return Task.WhenAll(this.Changes.OrderByDescending(change => change.Priority)
-                                            .Select(change => change.ApplyAsync(dataSource, localPath))
+                                            .Select(change => change.ApplyAsync(dataSource, localPath, token))
             );
         }
 
@@ -60,8 +72,17 @@ namespace UpNet.Core
             Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
             Contract.Requires<InvalidOperationException>(this.Changes != null);
 
+            return this.FinishApplyAsync(dataSource, localPath, updateSucceeded, CancellationToken.None);
+        }
+
+        public Task FinishApplyAsync(IDataSource dataSource, string localPath, bool updateSucceeded, CancellationToken token)
+        {
+            Contract.Requires<ArgumentNullException>(dataSource != null);
+            Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(localPath));
+            Contract.Requires<InvalidOperationException>(this.Changes != null);
+
             return Task.WhenAll(this.Changes.OrderByDescending(change => change.Priority)
-                                            .Select(change => change.FinishApplyAsync(dataSource, localPath, updateSucceeded))
+                                            .Select(change => change.FinishApplyAsync(dataSource, localPath, updateSucceeded, token))
             );
         }
 
@@ -83,14 +104,12 @@ namespace UpNet.Core
             if (ReferenceEquals(other, this))
                 return true;
 
-            return (this.Count == other.Count) && (this.Changes.SequenceEqual(other.Changes)) && 
-                   (this.Meta == other.Meta) && (this.Version == other.Version);
+            return (this.Version == other.Version) && (this.Meta == other.Meta) && (this.Changes.SequenceEqual(other.Changes));
         }
 
         public IEnumerator<Change> GetEnumerator()
         {
-            IEnumerable<Change> changes = this.Changes;
-            return (changes != null) ? changes.GetEnumerator() : null;
+            return this.Changes.GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -100,7 +119,14 @@ namespace UpNet.Core
 
         public override int GetHashCode()
         {
-            return new { ChangeCount = this.Count, this.Changes, this.Meta, this.Version }.GetHashCode();
+            unchecked
+            {
+                int hash = 29;
+                hash = hash * 486187739 + this.Changes.GetHashCode();
+                hash = hash * 486187739 + this.Meta.GetHashCode();
+                hash = hash * 486187739 + this.Version.GetHashCode();
+                return hash;
+            }
         }
 
         [ContractInvariantMethod]

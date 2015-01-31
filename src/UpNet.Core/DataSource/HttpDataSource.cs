@@ -6,12 +6,16 @@ using System.Linq;
 using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace UpNet.Core.DataSource
 {
     public class HttpDataSource : IDataSource
     {
+        private static readonly HttpClient httpClient = new HttpClient();
+
         public Uri ServerUri { get; private set; }
 
         public string UpdateFileName { get; private set; }
@@ -32,26 +36,21 @@ namespace UpNet.Core.DataSource
             this.UpdateFileName = updateFileName;
         }
 
-        public Task<Stream> GetItemAsync(string dataSourcePath)
+        public Task<Stream> GetItemAsync(string dataSourcePath, CancellationToken token)
         {
-            using (HttpClient client = new HttpClient())
-            {
-                return client.GetStreamAsync(new Uri(this.ServerUri, dataSourcePath));
-            }
+            return httpClient.GetStreamAsync(new Uri(this.ServerUri, dataSourcePath));
         }
 
-        public async Task<Update> GetUpdateAsync()
+        public async Task<Update> GetUpdateAsync(CancellationToken token)
         {
-            using (HttpClient client = new HttpClient())
-            using (Stream updateStream = await client.GetStreamAsync(new Uri(this.ServerUri, this.UpdateFileName)).ConfigureAwait(false))
-            {
-                return await Task.Run(() =>
-                {
-                    Update update = (Update)new DataContractSerializer(typeof(Update)).ReadObject(updateStream);
-                    update.DataSource = this;
-                    return update;
-                }).ConfigureAwait(false);
-            }
+            token.ThrowIfCancellationRequested();
+
+            Update update = JsonConvert.DeserializeObject<Update>(
+                await httpClient.GetStringAsync(new Uri(this.ServerUri, this.UpdateFileName)),
+                new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore }
+            );
+            update.DataSource = this;
+            return update;
         }
 
         [ContractInvariantMethod]

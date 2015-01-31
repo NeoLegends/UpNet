@@ -5,11 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace UpNet.Core
 {
-    [DataContract]
+    [DataContract, JsonObject]
     public class DeleteChange : Change, IEquatable<DeleteChange>
     {
         public DeleteChange(string relativePath)
@@ -24,12 +26,12 @@ namespace UpNet.Core
             Contract.Requires<ArgumentNullException>(relativePath != null);
         }
 
-        public override Task ApplyAsync(DataSource.IDataSource dataSource, string localPath)
+        public override Task ApplyAsync(DataSource.IDataSource dataSource, string localPath, CancellationToken token)
         {
             return Task.FromResult(true);
         }
 
-        public override Task FinishApplyAsync(DataSource.IDataSource dataSource, string localPath, bool updateSucceeded)
+        public override Task FinishApplyAsync(DataSource.IDataSource dataSource, string localPath, bool updateSucceeded, CancellationToken token)
         {
             return updateSucceeded ?
                 Task.Run(() => File.Delete(Path.Combine(localPath, this.RelativePath))) :
@@ -55,11 +57,6 @@ namespace UpNet.Core
                 return true;
 
             return base.Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            return new { this.Priority, this.RelativePath }.GetHashCode();
         }
 
         [ContractInvariantMethod]

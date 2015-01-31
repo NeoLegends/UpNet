@@ -5,13 +5,17 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using UpNet.Core;
 
 namespace UpNet.Core.DataSource
 {
     public class FileSystemDataSource : IDataSource
     {
+        private static readonly JsonSerializer serializer = JsonSerializer.CreateDefault();
+
         public string LocalPath { get; private set; }
 
         public string UpdateFilePath { get; private set; }
@@ -25,29 +29,36 @@ namespace UpNet.Core.DataSource
             this.UpdateFilePath = updateFilePath;
         }
 
-        async Task<Stream> IDataSource.GetItemAsync(string dataSourcePath)
+        async Task<Stream> IDataSource.GetItemAsync(string dataSourcePath, CancellationToken token)
         {
-            return await this.GetItemAsync(dataSourcePath).ConfigureAwait(false);
+            return await this.GetItemAsync(dataSourcePath, token);
         }
 
-        public Task<FileStream> GetItemAsync(string dataSourcePath)
+        public Task<FileStream> GetItemAsync(string dataSourcePath, CancellationToken token)
         {
             Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(dataSourcePath));
 
+            token.ThrowIfCancellationRequested();
             return Task.FromResult(File.OpenRead(Path.Combine(this.LocalPath, dataSourcePath)));
         }
 
-        public Task<Update> GetUpdateAsync()
+        public Task<Update> GetUpdateAsync(CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
+
             return Task.Run(() =>
             {
                 using (FileStream fs = File.OpenRead(Path.Combine(this.LocalPath, this.UpdateFilePath)))
+                using (StreamReader sr = new StreamReader(fs))
+                using (JsonTextReader jtr = new JsonTextReader(sr))
                 {
-                    Update update = (Update)new DataContractSerializer(typeof(Update)).ReadObject(fs);
+                    token.ThrowIfCancellationRequested();
+
+                    Update update = serializer.Deserialize<Update>(jtr);
                     update.DataSource = this;
                     return update;
                 }
-            });
+            }, token);
         }
 
         [ContractInvariantMethod]
