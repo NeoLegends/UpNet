@@ -45,12 +45,13 @@ namespace UpNet.Core.DataSource
         {
             token.ThrowIfCancellationRequested();
 
-            Update update = JsonConvert.DeserializeObject<Update>(
-                await httpClient.GetStringAsync(new Uri(this.ServerUri, this.UpdateFileName)),
-                new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore }
-            );
-            update.DataSource = this;
-            return update;
+            using (Stream s = await httpClient.GetStreamAsync(new Uri(this.ServerUri, this.UpdateFileName)).ConfigureAwait(false))
+            using (StreamReader sr = new StreamReader(s))
+            using (JsonTextReader jtr = new JsonTextReader(sr))
+            {
+                return (new JsonSerializer() { Context = new StreamingContext(StreamingContextStates.All, this), NullValueHandling = NullValueHandling.Ignore })
+                           .Deserialize<Update>(jtr);
+            }
         }
 
         [ContractInvariantMethod]

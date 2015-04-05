@@ -108,7 +108,7 @@ namespace UpNet.Core.Test
                             new AddOrReplaceChange("TestFile2", "/path/to/TestFile2", "asdfjklasdfja"),
                             new DeleteChange("/path/to/TestFile3")
                         },
-                        new UserMeta(DateTime.Now, "This is a test release!"),
+                        new UserMeta(DateTime.Now - TimeSpan.FromHours(10), "This is a test release!"),
                         new Version(1, 0, 3, 3534)
                     ),
                     new Patch(

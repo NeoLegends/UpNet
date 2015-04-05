@@ -46,19 +46,20 @@ namespace UpNet.Core
             token.ThrowIfCancellationRequested();
 
             string fullLocalFilePath = Path.Combine(localPath, this.RelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullLocalFilePath));
+
             using (FileStream fs = new FileStream(fullLocalFilePath + ".update", FileMode.Create, FileAccess.ReadWrite))
             {
-                using (Stream dataStream = await dataSource.GetItemAsync(this.DataSourcePath, token))
+                using (Stream dataStream = await dataSource.GetItemAsync(this.DataSourcePath, token).ConfigureAwait(false))
                 {
-                    await dataStream.CopyToAsync(fs, 4096, token);
+                    await dataStream.CopyToAsync(fs, 4096, token).ConfigureAwait(false);
                 }
 
-                token.ThrowIfCancellationRequested();
-
+                await fs.FlushAsync(token).ConfigureAwait(false);
                 fs.Position = 0;
                 using (SHA256 sha1 = SHA256.Create())
                 {
-                    byte[] computedHash = await Task.Run(() => sha1.ComputeHash(fs));
+                    byte[] computedHash = await Task.Run(() => sha1.ComputeHash(fs)).ConfigureAwait(false);
                     token.ThrowIfCancellationRequested();
                     if (!computedHash.SequenceEqual(Convert.FromBase64String(this.Sha256)))
                     {
@@ -89,7 +90,7 @@ namespace UpNet.Core
                 {
                     File.Delete(fullLocalFilePath + ".update");
                 }
-            });
+            }, token);
         }
 
         public override bool Equals(object obj)

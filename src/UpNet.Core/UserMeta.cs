@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 namespace UpNet.Core
 {
     [DataContract, JsonObject]
-    public struct UserMeta : IEquatable<UserMeta>
+    public struct UserMeta : ICloneable, IEquatable<UserMeta>
     {
         [DataMember, JsonProperty]
         public DateTime ReleaseDate { get; private set; }
@@ -23,6 +23,11 @@ namespace UpNet.Core
         {
             this.ReleaseDate = releaseDate;
             this.ReleaseNotes = releaseNotes;
+        }
+
+        public object Clone()
+        {
+            return new UserMeta(this.ReleaseDate, this.ReleaseNotes);
         }
 
         public override bool Equals(object obj)

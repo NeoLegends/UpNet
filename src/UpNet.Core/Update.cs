@@ -119,7 +119,6 @@ namespace UpNet.Core
                 updateSuccess = false;
             }
 
-            token.ThrowIfCancellationRequested();
             foreach (Patch patch in patchesToApply)
             {
                 try
@@ -146,8 +145,7 @@ namespace UpNet.Core
             if (ReferenceEquals(obj, this))
                 return true;
 
-            Update update = obj as Update;
-            return (update != null) ? this.Equals(update) : false;
+            return this.Equals(obj as Update);
         }
 
         public bool Equals(Update other)
